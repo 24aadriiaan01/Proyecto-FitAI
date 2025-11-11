@@ -1,0 +1,254 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String @id @default(cuid())
+  name     String
+  email    String @unique
+  password String
+
+  messages Message[]
+
+  directMessagesSent     DirectMessage[] @relation("SentDirectMessages")
+  directMessagesReceived DirectMessage[] @relation("ReceivedDirectMessages")
+
+  profile              UserProfile?
+  progress             Progress[]
+  image                String?
+  bio                  String?
+  socials              Json?
+  routine              Routine[]
+  nutrition            NutritionPlan[]
+  memories             UserMemory[]
+  workoutSchedules     WorkoutSchedule[]
+  nutritionSchedules   NutritionSchedule[]
+  activeRoutines       ActiveRoutine[]
+  activeNutritions     ActiveNutrition[]
+  friendshipsRequested Friendship[]        @relation("FriendRequester")
+  friendshipsReceived  Friendship[]        @relation("FriendReceiver")
+  UserAchievement      UserAchievement[]
+  workoutSessions WorkoutSession[]
+  foodLogs FoodLog[]
+}
+
+model UserProfile {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  age       Int?
+  weight    Float?
+  height    Float?
+  goal      String? // Ejemplo: "Ganar masa muscular"
+  level     String? // Ejemplo: "Principiante", "Intermedio", "Avanzado"
+  image     String?
+  bio       String?
+  socials   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model UserMemory {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key])
+}
+
+model Progress {
+  id     Int      @id @default(autoincrement())
+  user   User     @relation(fields: [userId], references: [id])
+  userId String
+  date   DateTime @default(now())
+  weight Float
+  height Float?
+  notes  String?
+}
+
+model Routine {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  content     String
+  createdAt   DateTime @default(now())
+
+  user          User            @relation(fields: [userId], references: [id])
+  userId        String
+  activeRoutine ActiveRoutine[]
+}
+
+model NutritionPlan {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  content     String
+  createdAt   DateTime @default(now())
+
+  user            User              @relation(fields: [userId], references: [id])
+  userId          String
+  activeNutrition ActiveNutrition[]
+}
+
+model WorkoutSchedule {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  day       String // Ejemplo: "Lunes"
+  routine   String // Ejemplo: "Pecho y tríceps"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NutritionSchedule {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  day       String // Ejemplo: "Lunes"
+  meal      String // Ejemplo: "Desayuno"
+  plan      String // Ejemplo: "Avena con frutas y claras"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ActiveRoutine {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  routineId String
+  routine   Routine  @relation(fields: [routineId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId])
+}
+
+model ActiveNutrition {
+  id          Int           @id @default(autoincrement())
+  user        User          @relation(fields: [userId], references: [id])
+  userId      String
+  nutritionId String
+  nutrition   NutritionPlan @relation(fields: [nutritionId], references: [id])
+  createdAt   DateTime      @default(now())
+
+  @@unique([userId])
+}
+
+model Friendship {
+  id          Int      @id @default(autoincrement())
+  requester   User     @relation("FriendRequester", fields: [requesterId], references: [id])
+  requesterId String
+  receiver    User     @relation("FriendReceiver", fields: [receiverId], references: [id])
+  receiverId  String
+  status      String   @default("pending") // pending, accepted, rejected
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DirectMessage {
+  id        Int      @id @default(autoincrement())
+  content   String
+  image     String?
+  createdAt DateTime @default(now())
+
+  senderId   String
+  receiverId String
+
+  sender   User @relation("SentDirectMessages", fields: [senderId], references: [id])
+  receiver User @relation("ReceivedDirectMessages", fields: [receiverId], references: [id])
+}
+
+model Achievement {
+  id              Int               @id @default(autoincrement())
+  key             String            @unique // clave interna, ej: "strength_titanium"
+  name            String
+  description     String
+  category        String // "physical" | "nutrition" | "social"
+  icon            String?
+  iconPrompt      String? // prompt IA / referencia del icono
+  rarity          String? // "common" | "rare" | "epic"
+  createdAt       DateTime          @default(now())
+  UserAchievement UserAchievement[]
+}
+
+model UserAchievement {
+  id            Int         @id @default(autoincrement())
+  user          User        @relation(fields: [userId], references: [id])
+  userId        String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  achievementId Int
+  unlockedAt    DateTime    @default(now())
+  equipped      Boolean     @default(false) // Nuevo campo
+
+  @@unique([userId, achievementId])
+}
+
+model WorkoutSession {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+  name      String?  // Ej: "Día de Pecho y Tríceps" o "Cardio Ligero"
+  
+  exercises ExerciseLog[]
+
+  @@index([userId])
+}
+
+model ExerciseLog {
+  id          Int      @id @default(autoincrement())
+  sessionId   Int
+  session     WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  exerciseName    String // Ej: "Press Banca", "Sentadilla", "Correr"
+  muscleGroup     String? // Grupo muscular trabajado
+  repsAndWeight   String? // Nuevo campo para repeticiones y peso (ej: "3x10 80kg")
+
+  @@index([sessionId])
+}
+
+model FoodLog {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+  
+  foodItem  String // Ej: "Pechuga de pollo con arroz", "Ensalada de quinoa"
+  calories  Int?
+  protein   Float?
+  carbs     Float?
+  fats      Float?
+  isHealthy Boolean  @default(false)
+  mealType  String? // Ej: "Desayuno", "Almuerzo", "Cena"
+  
+  @@index([userId])
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  type      String // "sugerencia", "mejora", "bug"
+  message   String
+  createdAt DateTime @default(now())
+  isRead    Boolean  @default(false)
+
+  @@index([createdAt])
+}
