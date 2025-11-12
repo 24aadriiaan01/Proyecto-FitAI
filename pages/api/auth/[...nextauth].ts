@@ -14,7 +14,6 @@ export const authOptions: AuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-
         try {
           if (!credentials?.email || !credentials?.password) return null;
 
@@ -23,7 +22,6 @@ export const authOptions: AuthOptions = {
           });
 
           if (!user) {
-            console.log("User not found");
             return null; // User not found
           }
 
@@ -33,10 +31,10 @@ export const authOptions: AuthOptions = {
           );
 
           if (!isValid) {
-            console.log("Invalid password");
             return null; // Password incorrect
           }
 
+          // El id del usuario ya es un string (cuid), no se necesita .toString()
           return { id: user.id, name: user.name, email: user.email };
         } catch (error) {
           console.error("Authorize error:", error);
