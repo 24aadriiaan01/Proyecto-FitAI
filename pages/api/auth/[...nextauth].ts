@@ -14,21 +14,28 @@ export const authOptions: AuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            return null;
+          }
 
-        const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+          const user = await prisma.user.findUnique({ where: { email: credentials.email } });
 
-        if (!user) return null;
+          if (!user) {
+            return null;
+          }
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) return null;
+          const isValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isValid) {
+            return null;
+          }
 
-        // 🔧 Convertimos el id numérico en string para que NextAuth esté feliz
-        return {
-          id: user.id.toString(),
-          name: user.name,
-          email: user.email,
-        };
+          // El id ya es un string (cuid), no necesita .toString()
+          return { id: user.id, name: user.name, email: user.email };
+        } catch (error) {
+          console.error("Error en authorize:", error);
+          return null; // Devuelve null si hay cualquier error
+        }
       },
     }),
   ],
