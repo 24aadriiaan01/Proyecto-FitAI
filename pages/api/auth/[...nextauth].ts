@@ -14,27 +14,33 @@ export const authOptions: AuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        try {
-          if (!credentials?.email || !credentials?.password) {
-            return null;
-          }
 
-          const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+        try {
+          if (!credentials?.email || !credentials?.password) return null;
+
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          });
 
           if (!user) {
-            return null;
+            console.log("User not found");
+            return null; // User not found
           }
 
-          const isValid = await bcrypt.compare(credentials.password, user.password);
+          const isValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+
           if (!isValid) {
-            return null;
+            console.log("Invalid password");
+            return null; // Password incorrect
           }
 
-          // El id ya es un string (cuid), no necesita .toString()
           return { id: user.id, name: user.name, email: user.email };
         } catch (error) {
-          console.error("Error en authorize:", error);
-          return null; // Devuelve null si hay cualquier error
+          console.error("Authorize error:", error);
+          return null;
         }
       },
     }),
@@ -43,7 +49,6 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, user }) {
-      // En el inicio de sesión inicial, el objeto 'user' está disponible.
       // Persistimos los datos que queremos en el token.
       if (user) {
         token.id = user.id;
@@ -53,7 +58,6 @@ export const authOptions: AuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      // El token contiene ahora todos los datos que necesitamos.
       // Reconstruimos el objeto `user` de la sesión para garantizar que tenga la estructura correcta.
       return {
         ...session,
