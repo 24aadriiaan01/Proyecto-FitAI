@@ -43,17 +43,26 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, user }) {
+      // En el inicio de sesión inicial, el objeto 'user' está disponible.
+      // Persistimos los datos que queremos en el token.
       if (user) {
         token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
       }
       return token;
     },
     async session({ session, token }) {
-      // La forma correcta es reconstruir el objeto session.user
-      // para asegurar que TypeScript y NextAuth estén sincronizados.
+      // El token contiene ahora todos los datos que necesitamos.
+      // Reconstruimos el objeto `user` de la sesión para garantizar que tenga la estructura correcta.
       return {
         ...session,
-        user: { ...session.user, id: token.id as string },
+        user: {
+          ...session.user, // Mantenemos propiedades por defecto como 'image'
+          id: token.id as string,
+          name: token.name as string,
+          email: token.email as string,
+        },
       };
     },
   },
