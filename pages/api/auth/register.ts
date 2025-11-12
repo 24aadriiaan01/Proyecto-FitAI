@@ -24,7 +24,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        // Crear un perfil de usuario por defecto junto con el usuario
+        profile: {
+          create: {
+            // Aquí puedes establecer valores por defecto para un nuevo perfil
+            age: null,
+            weight: null,
+            height: null,
+            goal: "No especificado",
+            level: "principiante",
+            bio: "¡Hola! Soy nuevo en FitAI.",
+            image: "/images/defaults/avatar1.png", // Asegúrate de que esta ruta sea válida
+            socials: {
+              instagram: "", x: "", youtube: ""
+            }
+          },
+        },
+      },
     });
 
     return res.status(201).json({ message: "Usuario creado con éxito", user });
