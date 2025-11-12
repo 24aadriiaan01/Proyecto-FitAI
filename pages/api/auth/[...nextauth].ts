@@ -49,10 +49,12 @@ export const authOptions: AuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-      }
-      return session;
+      // La forma correcta es reconstruir el objeto session.user
+      // para asegurar que TypeScript y NextAuth estén sincronizados.
+      return {
+        ...session,
+        user: { ...session.user, id: token.id as string },
+      };
     },
   },
 };
