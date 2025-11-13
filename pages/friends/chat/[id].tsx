@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import axios from "axios";
 import io from "socket.io-client";
@@ -44,6 +45,7 @@ interface Friend {
 
 export default function ChatPage() {
   const router = useRouter();
+  const { data: session } = useSession(); // 2. Obtener la sesión actual
   const { id } = router.query;
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [socket, setSocket] = useState<any>(null);
@@ -78,13 +80,18 @@ export default function ChatPage() {
 
   // 🔸 Conectar Socket.IO
   useEffect(() => {
-    if (!id) return;
+    // 3. Asegurarse de que tenemos el ID del amigo y el ID del usuario actual
+    if (!id || !session?.user?.id) return;
 
     // 🔸 Inicializamos el socket una sola vez
     fetch("/api/socket");
     const newSocket = io({ path: "/api/socket_io" });
 
-    newSocket.emit("join_room", id);
+    // 4. Crear el ID de la sala de la misma forma que en el backend
+    const chatRoomId = [session.user.id, id].sort().join('-');
+    
+    // 5. Unirse a la sala correcta
+    newSocket.emit("join_room", chatRoomId);
 
     newSocket.on("receive_message", (msg: DirectMessage) => {
       setMessages((prev) => [...prev, msg]);
@@ -96,7 +103,7 @@ export default function ChatPage() {
     return () => {
       newSocket.disconnect();
     };
-  }, [id]); // ✅ Eliminamos 'socket' de las dependencias
+  }, [id, session]); // 6. Añadir session como dependencia
 
   // 🔸 Scroll automático al final del chat
   useEffect(() => {
@@ -117,8 +124,12 @@ export default function ChatPage() {
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
+      
+      // No es necesario volver a emitir el mensaje desde el cliente.
+      // El backend ya se encarga de emitirlo a la sala correcta.
+      // La línea `socket.emit("send_message", ...)` puede ser eliminada.
+      // El evento "receive_message" que escucha el cliente recibirá el mensaje del backend.
 
-      socket.emit("send_message", { ...res.data, roomId: id });
       setNewMessage("");
       setImage(null);
     } catch (err) {

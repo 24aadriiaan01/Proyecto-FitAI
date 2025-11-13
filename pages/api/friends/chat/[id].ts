@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { Server } from "socket.io"; // Importamos el tipo Server para mayor seguridad
 
 const uploadDir = path.join(process.cwd(), "public", "uploads", "chat");
 
@@ -85,6 +86,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           image: imageUrl,
         },
       });
+
+      // Acceder a la instancia de Socket.io y emitir el nuevo mensaje
+      // La instancia de io se adjunta al servidor HTTP en pages/api/socket.ts
+      const io = (res.socket as any)?.server?.io as Server;
+
+      if (io) {
+        // Crear un ID de sala consistente para el chat directo
+        // Esto asegura que ambos usuarios (sender y receiver) estén en la misma sala
+        const chatRoomId = [currentUser.id, friendId].sort().join('-');
+        
+        // Emitir el nuevo mensaje a la sala de chat
+        // El evento 'receive_message' debe ser escuchado por los clientes en esa sala
+        io.to(chatRoomId).emit("receive_message", newMessage);
+        console.log(`[Socket.io] Mensaje emitido a la sala ${chatRoomId}:`, newMessage.id);
+      } else {
+        console.warn("[Socket.io] Servidor Socket.io no disponible para actualización en tiempo real.");
+      }
 
       return res.status(200).json(newMessage);
     }

@@ -38,6 +38,13 @@ export default function RegisterPage() {
         onSubmit={handleRegister}
         className="relative z-10 bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl px-8 py-10 w-full max-w-md text-white"
       >
+        <button
+          type="button" // Previene que el botón envíe el formulario
+          onClick={() => router.push('/inicio')}
+          className="absolute top-4 left-4 bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white rounded-full p-2 transition"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+        </button>
         <h1 className="text-3xl font-bold text-center mb-2">Crear cuenta</h1>
         <p className="text-center text-gray-300 mb-6">
           Únete a FitAI y empieza tu progreso

@@ -3,28 +3,28 @@ import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
+import { v2 as cloudinary } from "cloudinary";
+import streamifier from "streamifier";
 
 const prisma = new PrismaClient();
-const uploadDir = path.join(process.cwd(), "public/uploads/avatars");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // Configuración multer
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, `${uniqueSuffix}-${file.originalname}`);
-  },
-});
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions);
-  if (!session?.user?.email) return res.status(401).json({ message: "No autenticado" });
+  if (!session?.user?.email) {
+    return res.status(401).json({ message: "No autenticado" });
+  }
 
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
@@ -46,6 +46,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         const file = (req as any).file;
+        let imageUrl: string | undefined = undefined;
+
+        if (file) {
+          const streamUpload = () => {
+            return new Promise((resolve, reject) => {
+              const stream = cloudinary.uploader.upload_stream(
+                { folder: "fitai/avatars" },
+                (error, result) => {
+                  if (result) resolve(result);
+                  else reject(error);
+                }
+              );
+              streamifier.createReadStream(file.buffer).pipe(stream);
+            });
+          };
+          const uploadResult: any = await streamUpload();
+          imageUrl = uploadResult.secure_url;
+        }
         const body: any = (req as any).body;
 
         const data = {
@@ -56,7 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           level: body.level || null,
           bio: body.bio || null,
           socials: body.socials ? JSON.parse(body.socials) : null,
-          image: file ? `/uploads/avatars/${file.filename}` : undefined,
+          image: imageUrl || undefined,
         };
 
         const profile = await prisma.userProfile.upsert({
