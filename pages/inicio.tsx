@@ -114,7 +114,7 @@ export default function HomePage() {
             <div className="flex justify-center items-center gap-4">
               {/* Botón de CTA animado */}
               <motion.div animate={{ scale: [1, 1.05, 1], boxShadow: ["0 0 0 rgba(0,0,0,0)", "0 0 30px rgba(59,130,246,0.5)", "0 0 0 rgba(0,0,0,0)"] }} transition={{ repeat: Infinity, duration: 2.5 }}>
-                <Link href="/register" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-xl text-lg transition-transform transform hover:scale-105 shadow-lg">
+                <Link href="/register" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-xl text-lg transition-transform transform hover:scale-105 shadow-lg whitespace-nowrap">
                   Únete a la Revolución
                 </Link>
               </motion.div>
