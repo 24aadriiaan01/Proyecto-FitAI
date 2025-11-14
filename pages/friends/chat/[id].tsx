@@ -84,8 +84,12 @@ export default function ChatPage() {
     if (!id || !session?.user?.id) return;
 
     // 🔸 Inicializamos el socket una sola vez
-    fetch("/api/socket");
-    const newSocket = io({ path: "/api/socket_io" });
+    fetch("/api/socket_io");
+
+    const newSocket = io({
+      path: "/api/socket_io",
+      transports: ["websocket"], 
+    });
 
     // 4. Crear el ID de la sala de la misma forma que en el backend
     const chatRoomId = [session.user.id, id].sort().join('-');
@@ -93,10 +97,9 @@ export default function ChatPage() {
     // 5. Unirse a la sala correcta
     newSocket.emit("join_room", chatRoomId);
 
-    newSocket.on("receive_message", (msg: DirectMessage) => {
+    newSocket.on("receive_message", (msg: DirectMessage) => { // Mantener el tipo DirectMessage para seguridad
       setMessages((prev) => [...prev, msg]);
     });
-
     setSocket(newSocket);
 
     // 🧹 La función de limpieza se ejecuta solo al desmontar el componente
@@ -201,7 +204,7 @@ export default function ChatPage() {
               }`}
             >
               <div
-                className={`p-3 sm:p-4 rounded-2xl max-w-[80%] sm:max-w-lg shadow-md ${
+                className={`p-3 sm:p-4 rounded-2xl max-w-[80%] sm:max-w-lg shadow-md text-wrap ${
                   msg.senderId === friend.id
                     ? "bg-white/90 text-gray-900 rounded-bl-none"
                     : "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-none"
@@ -209,7 +212,7 @@ export default function ChatPage() {
               >
                 {msg.image && (
                   <img
-                    src={`${window.location.origin}${msg.image}`}
+                    src={msg.image}
                     alt="Imagen enviada"
                     className="rounded-lg mb-2 max-w-full"
                   />

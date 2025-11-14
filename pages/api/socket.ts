@@ -1,10 +1,14 @@
 import { Server } from "socket.io";
+import { seedAchievementsIfNeeded } from "@/lib/achievements"; // 1. Importamos la función
 
-const SocketHandler = (req: any, res: any) => {
+const SocketHandler = async (req: any, res: any) => { // 2. Convertimos la función en async
   if (res.socket.server.io) {
     res.end();
     return;
   }
+
+  // 3. Ejecutamos la función para crear los logros en la BD si no existen
+  await seedAchievementsIfNeeded();
 
   const io = new Server(res.socket.server, {
     path: "/api/socket_io",

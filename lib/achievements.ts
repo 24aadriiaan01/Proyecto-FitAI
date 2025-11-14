@@ -155,8 +155,13 @@ export async function checkAndUnlockAchievements(userId: string) {
   let totalCardioMinutes = 0;
   workoutSessions.forEach(session => {
     session.exercises.forEach(ex => {
-      if (ex.exerciseName.toLowerCase().includes('cardio') && ex.durationMinutes) { // 'ex' es ahora un ExerciseLog
-        totalCardioMinutes += ex.durationMinutes;
+      // Si el ejercicio es cardio y tenemos un valor en repsAndWeight...
+      if (ex.exerciseName.toLowerCase().includes('cardio') && ex.repsAndWeight) {
+        // Extraemos solo el número del string (ej. "30 min" -> 30)
+        const minutes = parseInt(ex.repsAndWeight, 10);
+        if (!isNaN(minutes)) {
+          totalCardioMinutes += minutes;
+        }
       }
     });
   });
@@ -290,9 +295,12 @@ export async function getAchievementsWithProgress(userId: string) {
         let totalCardioMinutes = 0;
         workoutSessions.forEach(session => {
           session.exercises.forEach(ex => {
-            // 'ex' es ahora un ExerciseLog, pero los campos son los mismos
-            if (ex.exerciseName.toLowerCase().includes('cardio') && ex.durationMinutes) {
-              totalCardioMinutes += ex.durationMinutes;
+            // Corregido: Usar repsAndWeight para cardio
+            if (ex.exerciseName.toLowerCase().includes('cardio') && ex.repsAndWeight) {
+              const minutes = parseInt(ex.repsAndWeight, 10);
+              if (!isNaN(minutes)) {
+                totalCardioMinutes += minutes;
+              }
             }
           });
         });
